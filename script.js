@@ -1,63 +1,97 @@
-document.addEventListener('DOMContentLoaded', () => {
-    const loginScreen = document.getElementById('login-screen');
-    const signupScreen = document.getElementById('signup-screen');
-    const transactionsScreen = document.getElementById('transactions-screen');
-    const loginBtn = document.getElementById('login-btn');
-    const signupBtn = document.getElementById('signup-btn');
-    const logoutBtn = document.getElementById('logout-btn');
-    const showSignUpBtn = document.getElementById('show-signup-btn');
-    const showLoginBtn = document.getElementById('show-login-btn');
-    const loginEmail = document.getElementById('email-login');
-    const loginPassword = document.getElementById('password-login');
-    const signupEmail = document.getElementById('email-signup');
-    const signupPassword = document.getElementById('password-signup');
+body, html {
+    height: 100%;
+    margin: 0;
+    font-family: 'Arial', sans-serif;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background: linear-gradient(to right, #6a11cb, #2575fc);
+}
 
-    let users = [];  // User storage
+#app {
+    width: 90%;
+    max-width: 350px;
+    background: rgba(255, 255, 255, 0.8);
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+}
 
-    const transactions = [
-        { item: 'Boba', transactionType: 'Check In', date: '24 Nov 2024', location: 'A1' },
-        { item: 'Snow Ice', transactionType: 'Check In', date: '24 Nov 2024', location: 'B2' },
-        { item: 'Boba', transactionType: 'Check In', date: '25 Nov 2024', location: 'A1' }
-    ];
+.screen {
+    display: none;
+    text-align: center;
+}
 
-    function populateTransactions() {
-        const tableBody = document.getElementById('transactions-table');
-        tableBody.innerHTML = '';
-        transactions.forEach(t => {
-            const row = document.createElement('tr');
-            row.innerHTML = `<td>${t.item}</td><td>${t.transactionType}</td><td>${t.date}</td><td>${t.location}</td>`;
-            tableBody.appendChild(row);
-        });
-    }
+.screen.active {
+    display: block;
+}
 
-    function showScreen(screen) {
-        [loginScreen, signupScreen, transactionsScreen].forEach(s => {
-            s.style.display = 'none';
-        });
-        screen.style.display = 'block';
-    }
+/* Individual screen styles with specific widths */
+#login-screen {
+    height: 600px;
+    width: 350px; /* Custom width as needed */
+    overflow-y: auto;
+}
 
-    loginBtn.addEventListener('click', () => {
-        const user = users.find(u => u.email === loginEmail.value && u.password === loginPassword.value);
-        if (user) {
-            showScreen(transactionsScreen);
-            populateTransactions();
-        } else {
-            alert('Invalid login credentials. Please try again.');
-        }
-    });
+#signup-screen {
+    height: 600px;
+    width: 350px; /* Custom width as needed */
+    overflow-y: auto;
+}
 
-    signupBtn.addEventListener('click', () => {
-        if (users.some(u => u.email === signupEmail.value)) {
-            alert('An account with this email already exists.');
-        } else {
-            users.push({ email: signupEmail.value, password: signupPassword.value });
-            alert('Account created successfully!');
-            showScreen(loginScreen);
-        }
-    });
+#main-menu-screen {
+    height: 600px;
+    width: 350px; /* Custom width as needed */
+    overflow-y: auto;
+}
 
-    logoutBtn.addEventListener('click', () => showScreen(loginScreen));
-    showSignUpBtn.addEventListener('click', () => showScreen(signupScreen));
-    showLoginBtn.addEventListener('click', () => showScreen(loginScreen));
-});
+#transactions-screen {
+    height: 600px;
+    width: 350px; /* Almost full width, but slightly less */
+    overflow-y: auto;
+}
+
+#settings-screen {
+    height: 600px;
+    width: 350px; /* Almost full width, but slightly less */
+    overflow-y: auto;
+}
+
+input, button {
+    width: 100%;
+    padding: 12px 20px;
+    margin: 8px 0;
+    border-radius: 4px;
+    border: 1px solid #ccc;
+    box-sizing: border-box;
+}
+
+button {
+    background-image: linear-gradient(to right, #ff7eb9, #ff65a3);
+    color: white;
+    border: none;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: background-color 0.3s ease, transform 0.3s ease;
+}
+
+button:hover {
+    background-image: linear-gradient(to right, #ff65a3, #ff4b81);
+    transform: scale(1.05);
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 20px;
+}
+
+th, td {
+    text-align: left;
+    padding: 8px;
+    border-bottom: 1px solid #ddd;
+}
