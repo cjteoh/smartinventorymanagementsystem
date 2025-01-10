@@ -24,67 +24,70 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // Function to fetch data from Google Sheets
-    async function fetchTransactions() {
+    function fetchTransactions() {
         const apiKey = 'AIzaSyAVm_K-H1nRU_Ve2VqwpqD13H4rQTaT3FU'; // Your API key
         const sheetId = '1k_TPTjTE1NPgLFCgsfsV1zjbSuNwh92qn3erodl_5bE'; // Your Google Sheet ID
         const range = 'Transactions!A:E'; // Adjust the range according to your sheet structure
+        const timestamp = new Date().getTime(); // Prevent caching
+        const url = `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/${range}?key=${apiKey}&t=${timestamp}`;
 
-        const url = `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/${range}?key=${apiKey}`;
-
-        try {
-            const response = await fetch(url);
-            const data = await response.json();
-            return data.values;
-        } catch (error) {
-            console.error('Error fetching data from Google Sheets:', error);
-            return [];
-        }
+        return new Promise((resolve, reject) => {
+            const xhr = new XMLHttpRequest();
+            xhr.open('GET', url, true);
+            xhr.onreadystatechange = function () {
+                if (xhr.readyState === 4) {
+                    if (xhr.status === 200) {
+                        resolve(JSON.parse(xhr.responseText).values);
+                    } else {
+                        reject(new Error(`Error fetching data: ${xhr.statusText}`));
+                    }
+                }
+            };
+            xhr.send();
+        });
     }
 
     // Function to populate transactions table
     async function populateTransactions() {
-        const transactions = await fetchTransactions();
-        transactionsTable.innerHTML = ''; // Clear the table
+        try {
+            const transactions = await fetchTransactions();
+            transactionsTable.innerHTML = ''; // Clear the table
 
-        if (transactions.length > 0) {
-            transactions.slice(1).forEach(t => {
+            if (transactions && transactions.length > 0) {
+                transactions.slice(1).forEach(t => {
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td>${t[0]}</td>
+                        <td>${t[1]}</td>
+                        <td>${t[2]}</td>
+                        <td>${t[3]}</td>
+                    `;
+                    transactionsTable.appendChild(row);
+                });
+            } else {
                 const row = document.createElement('tr');
-                row.innerHTML = `
-                    <td>${t[0]}</td>
-                    <td>${t[1]}</td>
-                    <td>${t[2]}</td>
-                    <td>${t[3]}</td>
-                `;
+                row.innerHTML = `<td colspan="4">No transactions found.</td>`;
                 transactionsTable.appendChild(row);
-            });
-        } else {
-            const row = document.createElement('tr');
-            row.innerHTML = `
-                <td colspan="4">No transactions found.</td>
-            `;
-            transactionsTable.appendChild(row);
+            }
+        } catch (error) {
+            alert('Error fetching transactions: ' + error.message);
         }
     }
 
-    // Login button event
+    // Event listeners for navigation and functionality
     loginBtn.addEventListener('click', () => {
         const email = document.getElementById('email-login').value.trim();
         const password = document.getElementById('password-login').value.trim();
         const user = users.find(u => u.email === email && u.password === password);
         if (user) {
-            loggedInUser = user; // Save the logged-in user reference
+            loggedInUser = user;
             showScreen(mainMenuScreen);
         } else {
             alert('Invalid login credentials. Please try again.');
         }
     });
 
-    // Show Sign Up screen
-    document.getElementById('show-signup-btn').addEventListener('click', () => {
-        showScreen(signupScreen);
-    });
-
-    // Sign Up button event
+    document.getElementById('show-signup-btn').addEventListener('click', () => showScreen(signupScreen));
     signupBtn.addEventListener('click', () => {
         const username = document.getElementById('username-signup').value.trim();
         const email = document.getElementById('email-signup').value.trim();
@@ -104,21 +107,14 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    // Back to Login button event
-    backToLoginBtn.addEventListener('click', () => {
-        showScreen(loginScreen);
-    });
-
-    // Navigate to Transactions
+    backToLoginBtn.addEventListener('click', () => showScreen(loginScreen));
     viewTransactionsBtn.addEventListener('click', () => {
         populateTransactions();
         showScreen(transactionsScreen);
     });
 
-    // Navigate to Settings
     viewSettingsBtn.addEventListener('click', () => {
         if (loggedInUser) {
-            // Populate settings form with logged-in user's details
             document.getElementById('username').value = loggedInUser.username;
             document.getElementById('password').value = loggedInUser.password;
             document.getElementById('role').value = loggedInUser.role || '';
@@ -127,33 +123,20 @@ document.addEventListener('DOMContentLoaded', () => {
         showScreen(settingsScreen);
     });
 
-    // Back buttons event
-    backButtons.forEach(button => {
-        button.addEventListener('click', () => {
-            showScreen(mainMenuScreen);
-        });
-    });
+    backButtons.forEach(button => button.addEventListener('click', () => showScreen(mainMenuScreen)));
+    logoutButtons.forEach(button => button.addEventListener('click', () => {
+        alert('You have been logged out.');
+        loggedInUser = null;
+        showScreen(loginScreen);
+    }));
 
-    // Logout buttons event
-    logoutButtons.forEach(button => {
-        button.addEventListener('click', () => {
-            alert('You have been logged out.');
-            loggedInUser = null; // Clear the logged-in user reference
-            showScreen(loginScreen);
-        });
-    });
-
-    // Profile form submission event
     profileForm.addEventListener('submit', (event) => {
-        event.preventDefault(); // Prevent the form from refreshing the page
+        event.preventDefault();
         if (loggedInUser) {
-            // Update the logged-in user's details
             loggedInUser.username = document.getElementById('username').value.trim();
             loggedInUser.password = document.getElementById('password').value.trim();
             loggedInUser.role = document.getElementById('role').value.trim();
             loggedInUser.country = document.getElementById('country').value.trim();
-
-            console.log('Profile updated:', loggedInUser);
             alert('Profile updated successfully!');
         } else {
             alert('Error: No user is currently logged in.');
