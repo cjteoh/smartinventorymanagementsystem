@@ -27,7 +27,7 @@ document.addEventListener('DOMContentLoaded', () => {
     function fetchTransactions() {
         const apiKey = 'AIzaSyAVm_K-H1nRU_Ve2VqwpqD13H4rQTaT3FU'; // Your API key
         const sheetId = '1k_TPTjTE1NPgLFCgsfsV1zjbSuNwh92qn3erodl_5bE'; // Your Google Sheet ID
-        const range = 'Transactions!A:E'; // Adjust the range according to your sheet structure
+        const range = 'Transactions!A:G'; // Adjust the range according to your sheet structure
         const timestamp = new Date().getTime(); // Prevent caching
         const url = `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/${range}?key=${apiKey}&t=${timestamp}`;
 
