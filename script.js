@@ -4,10 +4,12 @@ document.addEventListener('DOMContentLoaded', () => {
     const mainMenuScreen = document.getElementById('main-menu-screen');
     const transactionsScreen = document.getElementById('transactions-screen');
     const settingsScreen = document.getElementById('settings-screen');
+    const analysisScreen = document.getElementById('analysis-screen');
     const loginBtn = document.getElementById('login-btn');
     const signupBtn = document.getElementById('signup-btn');
     const viewTransactionsBtn = document.getElementById('view-transactions-btn');
     const viewSettingsBtn = document.getElementById('view-settings-btn');
+    const viewAnalysisBtn = document.getElementById('view-analysis-btn');
     const backToLoginBtn = document.getElementById('back-to-login-btn');
     const transactionsTable = document.getElementById('transactions-table');
     const backButtons = document.querySelectorAll('.back-btn');
@@ -18,7 +20,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let loggedInUser = null; // Currently logged-in user reference
 
     function showScreen(screen) {
-        const screens = [loginScreen, signupScreen, mainMenuScreen, transactionsScreen, settingsScreen];
+        const screens = [loginScreen, signupScreen, mainMenuScreen, transactionsScreen, settingsScreen, analysisScreen];
         screens.forEach(s => s.classList.remove('active'));
         screen.classList.add('active');
     }
@@ -77,7 +79,390 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // Event listeners for navigation and functionality
+    // Function to render doughnut chart with gradient colors
+    async function renderTransactionTypeDoughnutChart() {
+        const transactions = await fetchTransactions();
+        const data = transactions.slice(1); // Remove header row
+
+        const transactionTypes = data.map(t => t[3]); // Transaction Type column
+        const typeCounts = {};
+        transactionTypes.forEach(type => {
+            typeCounts[type] = (typeCounts[type] || 0) + 1;
+        });
+
+        const ctx = document.getElementById('transactionTypeDoughnutChart').getContext('2d');
+
+        // Create gradient colors
+        const gradientColors = [
+            createGradient(ctx, '#36A2EB', '#4BC0C0'), // Blue to Mint gradient for Check In
+            createGradient(ctx, '#FF6384', '#FF9F40')  // Red to Orange gradient for Check Out
+        ];
+
+        new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+                labels: Object.keys(typeCounts),
+                datasets: [{
+                    data: Object.values(typeCounts),
+                    backgroundColor: gradientColors, // Use gradient colors
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    title: {
+                        display: true,
+                        text: 'Transaction Type Distribution'
+                    }
+                }
+            }
+        });
+    }
+
+    // Helper function to create gradient colors
+    function createGradient(ctx, color1, color2) {
+        const gradient = ctx.createLinearGradient(0, 0, 0, 400); // Vertical gradient
+        gradient.addColorStop(0, color1); // Start color
+        gradient.addColorStop(1, color2); // End color
+        return gradient;
+    }
+
+    // Function to render the quantity line chart
+    async function renderQuantityLineChart() {
+        const transactions = await fetchTransactions();
+        const data = transactions.slice(1); // Remove header row
+
+        // Group data by Manufacture Date for Check In and Check Out
+        const dateCheckInMap = {};
+        const dateCheckOutMap = {};
+
+        data.forEach(transaction => {
+            const date = transaction[5]; // Manufacture Date column
+            const transactionType = transaction[3]; // Transaction Type column
+
+            if (!date) {
+                console.warn('Missing Manufacture Date for transaction:', transaction);
+                return; // Skip transactions with missing dates
+            }
+
+            if (transactionType === "Check In") {
+                if (!dateCheckInMap[date]) {
+                    dateCheckInMap[date] = 0;
+                }
+                dateCheckInMap[date] += 1; // Increment quantity for Check In
+            } else if (transactionType === "Check Out") {
+                if (!dateCheckOutMap[date]) {
+                    dateCheckOutMap[date] = 0;
+                }
+                dateCheckOutMap[date] += 1; // Increment quantity for Check Out
+            }
+        });
+
+        // Sort dates in ascending order
+        const sortedDates = Object.keys({ ...dateCheckInMap, ...dateCheckOutMap }).sort((a, b) => new Date(a) - new Date(b));
+
+        // Prepare data for the chart
+        const labels = sortedDates; // X-axis: Manufacture Dates
+        const checkInQuantities = sortedDates.map(date => dateCheckInMap[date] || 0); // Y-axis: Check In Quantities
+        const checkOutQuantities = sortedDates.map(date => dateCheckOutMap[date] || 0); // Y-axis: Check Out Quantities
+
+        const ctx = document.getElementById('quantityLineChart').getContext('2d');
+        new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: labels,
+                datasets: [
+                    {
+                        label: 'Quantity Checked In',
+                        data: checkInQuantities,
+                        borderColor: '#36A2EB', // Blue for Check In
+                        backgroundColor: 'rgba(54, 162, 235, 0.2)', // Light blue fill
+                        borderWidth: 2,
+                        fill: true
+                    },
+                    {
+                        label: 'Quantity Checked Out',
+                        data: checkOutQuantities,
+                        borderColor: '#FF6384', // Red for Check Out
+                        backgroundColor: 'rgba(255, 99, 132, 0.2)', // Light red fill
+                        borderWidth: 2,
+                        fill: true
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    title: {
+                        display: true,
+                        text: 'Quantity Checked In and Out Over Time'
+                    }
+                },
+                scales: {
+                    x: {
+                        title: {
+                            display: true,
+                            text: 'Manufacture Date'
+                        },
+                        ticks: {
+                            maxRotation: 45,
+                            minRotation: 45,
+                            autoSkip: false,
+                            padding: 5
+                        }
+                    },
+                    y: {
+                        title: {
+                            display: true,
+                            text: 'Quantity'
+                        },
+                        beginAtZero: true
+                    }
+                }
+            }
+        });
+    }
+
+    // Function to render the accumulated quantity line chart
+    async function renderAccumulatedQuantityLineChart() {
+        const transactions = await fetchTransactions();
+        const data = transactions.slice(1); // Remove header row
+
+        // Group data by Date for Check In and Check Out
+        const dateCheckInMap = {};
+        const dateCheckOutMap = {};
+
+        data.forEach(transaction => {
+            const date = transaction[0]; // Date column (column A)
+            const transactionType = transaction[3]; // Transaction Type column
+
+            if (!date) {
+                console.warn('Missing Date for transaction:', transaction);
+                return; // Skip transactions with missing dates
+            }
+
+            if (transactionType === "Check In") {
+                if (!dateCheckInMap[date]) {
+                    dateCheckInMap[date] = 0;
+                }
+                dateCheckInMap[date] += 1; // Increment quantity for Check In
+            } else if (transactionType === "Check Out") {
+                if (!dateCheckOutMap[date]) {
+                    dateCheckOutMap[date] = 0;
+                }
+                dateCheckOutMap[date] += 1; // Increment quantity for Check Out
+            }
+        });
+
+        // Sort dates in ascending order
+        const sortedDates = Object.keys({ ...dateCheckInMap, ...dateCheckOutMap }).sort((a, b) => new Date(a) - new Date(b));
+
+        // Calculate accumulated quantities
+        let accumulatedCheckIn = 0;
+        let accumulatedCheckOut = 0;
+        const accumulatedCheckInQuantities = [];
+        const accumulatedCheckOutQuantities = [];
+
+        sortedDates.forEach(date => {
+            accumulatedCheckIn += dateCheckInMap[date] || 0;
+            accumulatedCheckOut += dateCheckOutMap[date] || 0;
+            accumulatedCheckInQuantities.push(accumulatedCheckIn);
+            accumulatedCheckOutQuantities.push(accumulatedCheckOut);
+        });
+
+        const ctx = document.getElementById('accumulatedQuantityLineChart').getContext('2d');
+        new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: Array.from({ length: sortedDates.length }, (_, i) => i + 1), // Use index as labels (1, 2, 3, ...)
+                datasets: [
+                    {
+                        label: 'Accumulated Check In',
+                        data: accumulatedCheckInQuantities,
+                        borderColor: '#4BC0C0', // Teal for Accumulated Check In
+                        backgroundColor: 'rgba(75, 192, 192, 0.2)', // Light teal fill
+                        borderWidth: 2,
+                        fill: true
+                    },
+                    {
+                        label: 'Accumulated Check Out',
+                        data: accumulatedCheckOutQuantities,
+                        borderColor: '#FF9F40', // Orange for Accumulated Check Out
+                        backgroundColor: 'rgba(255, 159, 64, 0.2)', // Light orange fill
+                        borderWidth: 2,
+                        fill: true
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    title: {
+                        display: true,
+                        text: 'Accumulated Quantity Checked In and Out Over Time'
+                    }
+                },
+                scales: {
+                    x: {
+                        title: {
+                            display: true,
+                            text: 'Transaction Sequence'
+                        },
+                        ticks: {
+                            display: false // Hide x-axis labels
+                        }
+                    },
+                    y: {
+                        title: {
+                            display: true,
+                            text: 'Accumulated Quantity'
+                        },
+                        beginAtZero: true
+                    }
+                }
+            }
+        });
+    }
+
+    // Function to render the quantity by item bar chart with unique colors
+    async function renderQuantityByItemBarChart() {
+        const transactions = await fetchTransactions();
+        const data = transactions.slice(1); // Remove header row
+
+        // Group data by Item
+        const itemCounts = {};
+        data.forEach(transaction => {
+            const item = transaction[2]; // Item column
+            if (!item) return; // Skip if item is missing
+            itemCounts[item] = (itemCounts[item] || 0) + 1; // Increment count for the item
+        });
+
+        const ctx = document.getElementById('quantityByItemBarChart').getContext('2d');
+
+        // Define a color palette for items
+        const itemColors = [
+            '#36A2EB', // Blue
+            '#FF6384', // Red
+            '#4BC0C0', // Teal
+            '#FF9F40', // Orange
+            '#9966FF', // Purple
+            '#00CC99', // Green
+            '#FF66B2', // Pink
+        ];
+
+        // Assign a unique color to each item
+        const backgroundColor = Object.keys(itemCounts).map((_, index) => {
+            return itemColors[index % itemColors.length]; // Cycle through the palette
+        });
+
+        new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: Object.keys(itemCounts), // Item names
+                datasets: [{
+                    label: 'Quantity by Item',
+                    data: Object.values(itemCounts), // Quantities
+                    backgroundColor: backgroundColor, // Use unique colors
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    title: {
+                        display: true,
+                        text: 'Quantity by Item'
+                    }
+                },
+                scales: {
+                    x: {
+                        title: {
+                            display: true,
+                            text: 'Item'
+                        }
+                    },
+                    y: {
+                        title: {
+                            display: true,
+                            text: 'Quantity'
+                        },
+                        beginAtZero: true
+                    }
+                }
+            }
+        });
+    }
+
+    // Function to render the quantity by location bar chart with unique colors
+    async function renderQuantityByLocationBarChart() {
+        const transactions = await fetchTransactions();
+        const data = transactions.slice(1); // Remove header row
+
+        // Group data by Location
+        const locationCounts = {};
+        data.forEach(transaction => {
+            const location = transaction[1]; // Location column
+            if (!location) return; // Skip if location is missing
+            locationCounts[location] = (locationCounts[location] || 0) + 1; // Increment count for the location
+        });
+
+        const ctx = document.getElementById('quantityByLocationBarChart').getContext('2d');
+
+        // Define a color palette for locations
+        const locationColors = [
+            '#00CC99', // Green
+            '#9966FF', // Purple
+            '#FF66B2', // Pink
+            '#36A2EB', // Blue
+            '#FF6384', // Red
+            '#4BC0C0', // Teal
+            '#FF9F40', // Orange
+        ];
+
+        // Assign a unique color to each location
+        const backgroundColor = Object.keys(locationCounts).map((_, index) => {
+            return locationColors[index % locationColors.length]; // Cycle through the palette
+        });
+
+        new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: Object.keys(locationCounts), // Location names
+                datasets: [{
+                    label: 'Quantity by Location',
+                    data: Object.values(locationCounts), // Quantities
+                    backgroundColor: backgroundColor, // Use unique colors
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    title: {
+                        display: true,
+                        text: 'Quantity by Location'
+                    }
+                },
+                scales: {
+                    x: {
+                        title: {
+                            display: true,
+                            text: 'Location'
+                        }
+                    },
+                    y: {
+                        title: {
+                            display: true,
+                            text: 'Quantity'
+                        },
+                        beginAtZero: true
+                    }
+                }
+            }
+        });
+    }
+
     loginBtn.addEventListener('click', () => {
         const email = document.getElementById('email-login').value.trim();
         const password = document.getElementById('password-login').value.trim();
@@ -124,6 +509,15 @@ document.addEventListener('DOMContentLoaded', () => {
             document.getElementById('country').value = loggedInUser.country || '';
         }
         showScreen(settingsScreen);
+    });
+
+    viewAnalysisBtn.addEventListener('click', () => {
+        renderTransactionTypeDoughnutChart();
+        renderQuantityLineChart();
+        renderAccumulatedQuantityLineChart();
+        renderQuantityByItemBarChart(); // Render the updated bar chart
+        renderQuantityByLocationBarChart(); // Render the updated bar chart
+        showScreen(analysisScreen);
     });
 
     backButtons.forEach(button => button.addEventListener('click', () => showScreen(mainMenuScreen)));
