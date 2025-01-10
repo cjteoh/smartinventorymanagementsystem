@@ -27,7 +27,7 @@ document.addEventListener('DOMContentLoaded', () => {
     function fetchTransactions() {
         const apiKey = 'AIzaSyAVm_K-H1nRU_Ve2VqwpqD13H4rQTaT3FU'; // Your API key
         const sheetId = '1k_TPTjTE1NPgLFCgsfsV1zjbSuNwh92qn3erodl_5bE'; // Your Google Sheet ID
-        const range = 'Transactions!A:G'; // Adjust the range according to your sheet structure
+        const range = 'Transactions!A:G'; // Range includes columns A to G
         const timestamp = new Date().getTime(); // Prevent caching
         const url = `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/${range}?key=${apiKey}&t=${timestamp}`;
 
@@ -57,16 +57,19 @@ document.addEventListener('DOMContentLoaded', () => {
                 transactions.slice(1).forEach(t => {
                     const row = document.createElement('tr');
                     row.innerHTML = `
-                        <td>${t[0]}</td>
-                        <td>${t[1]}</td>
-                        <td>${t[2]}</td>
-                        <td>${t[3]}</td>
+                        <td>${t[0]}</td> <!-- Date -->
+                        <td>${t[1]}</td> <!-- Location -->
+                        <td>${t[2]}</td> <!-- Item -->
+                        <td>${t[3]}</td> <!-- Transaction Type -->
+                        <td>${t[4]}</td> <!-- Serial Number -->
+                        <td>${t[5]}</td> <!-- Manufacture Date -->
+                        <td>${t[6]}</td> <!-- Expiry Date -->
                     `;
                     transactionsTable.appendChild(row);
                 });
             } else {
                 const row = document.createElement('tr');
-                row.innerHTML = `<td colspan="4">No transactions found.</td>`;
+                row.innerHTML = `<td colspan="7">No transactions found.</td>`;
                 transactionsTable.appendChild(row);
             }
         } catch (error) {
