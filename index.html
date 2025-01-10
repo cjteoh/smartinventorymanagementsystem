@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smart Inventory Management System</title>
+    <meta http-equiv="Cache-Control" content="no-store" />
+    <link rel="stylesheet" href="style.css">
+    <!-- Include Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <div id="app">
+        <!-- Login Screen -->
+        <div id="login-screen" class="screen active">
+            <h1>Login</h1>
+            <input type="email" id="email-login" placeholder="Email" required>
+            <input type="password" id="password-login" placeholder="Password" required>
+            <button id="login-btn">Login</button>
+            <button id="show-signup-btn">Sign Up</button>
+        </div>
+
+        <!-- Sign Up Screen -->
+        <div id="signup-screen" class="screen">
+            <h1>Sign Up</h1>
+            <input type="text" id="username-signup" placeholder="Username" required>
+            <input type="email" id="email-signup" placeholder="Email" required>
+            <input type="password" id="password-signup" placeholder="Password" required>
+            <button id="signup-btn">Create Account</button>
+            <button id="back-to-login-btn">Back</button>
+        </div>
+
+        <!-- Main Menu Screen -->
+        <div id="main-menu-screen" class="screen">
+            <h1>Main Menu</h1>
+            <button id="view-transactions-btn">Transactions</button>
+            <button id="view-settings-btn">Settings</button>
+            <button id="view-analysis-btn">Analysis</button>
+        </div>
+
+        <!-- Transactions Screen -->
+        <div id="transactions-screen" class="screen">
+            <h1>Transaction Details</h1>
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Location</th>
+                            <th>Item</th>
+                            <th>Transaction Type</th>
+                            <th>Serial Number</th>
+                            <th>Manufacture Date</th>
+                            <th>Expiry Date</th>
+                        </tr>
+                    </thead>
+                    <tbody id="transactions-table">
+                        <!-- Transactions will be dynamically inserted here -->
+                    </tbody>
+                </table>
+            </div>
+            <button class="back-btn">Back</button>
+        </div>
+
+        <!-- Settings Screen -->
+        <div id="settings-screen" class="screen">
+            <h1>Settings</h1>
+            <form id="profile-form">
+                <input type="text" id="username" placeholder="Username" required>
+                <input type="password" id="password" placeholder="New Password">
+                <input type="text" id="role" placeholder="Role">
+                <input type="text" id="country" placeholder="Country">
+                <button type="submit">Save Changes</button>
+            </form>
+            <button class="logout-btn">Logout</button>
+            <button class="back-btn">Back</button>
+        </div>
+
+        <!-- Analysis Screen -->
+        <div id="analysis-screen" class="screen">
+            <h1>Analysis</h1>
+            <div class="chart-container">
+                <canvas id="transactionTypeDoughnutChart"></canvas>
+            </div>
+            <div class="chart-container">
+                <canvas id="quantityLineChart"></canvas>
+            </div>
+            <div class="chart-container">
+                <canvas id="accumulatedQuantityLineChart"></canvas>
+            </div>
+            <!-- New Bar Charts -->
+            <div class="chart-container">
+                <canvas id="quantityByItemBarChart"></canvas>
+            </div>
+            <div class="chart-container">
+                <canvas id="quantityByLocationBarChart"></canvas>
+            </div>
+            <button class="back-btn">Back</button>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
